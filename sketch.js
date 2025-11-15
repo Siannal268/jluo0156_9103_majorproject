@@ -12,6 +12,7 @@ let screamerCenterX, screamerCenterY;
 
 let audioLevel = 0;
 
+
 const screamerPivotX = 0.5;        // 横向 0~1，0.5 = 正中间
 const screamerPivotY = 0.7; 
 
@@ -70,8 +71,15 @@ function setup() {
   analyser.setInput(song);
 
   let button = createButton('Play/Pause');
-  button.position(20, 20); // 随便放一角落
+  button.position(20, 20);
+  button.style('background', 'rgba(231, 111, 12, 0.94)');
+  button.style('color', 'white');
+  button.style('border', 'none');
+  button.style('padding', '10px 20px');
+  button.style('border-radius', '10px');
+  button.style('font-size', '12px');
   button.mousePressed(playPause);
+  
 }
 
 function draw() {
@@ -101,6 +109,9 @@ function draw() {
   let level = max(0, rms - noiseFloor);
   level = constrain(level, 0, 0.3);
   let t = level / 0.3;
+  audioLevel = t;
+
+  
 
   // scaleFactor：最小 = 1（正常大小），最大 = 1.5（放大）
   let scaleFactor = lerp(1.0, 2.8, t);
@@ -119,6 +130,18 @@ function draw() {
     screamerBaseHeight * screamerPivotY -
     drawHeight * screamerPivotY;
 
+  let maxScreamerShake = 50;               
+  let shakeStrength = audioLevel;
+  let shakeX = random(-maxScreamerShake * shakeStrength,
+                     maxScreamerShake * shakeStrength);
+
+
+  let shakeY = random(-10 * shakeStrength, 10 * shakeStrength);
+
+
+  drawX += shakeX;
+  drawY += shakeY;
+
   image(layerImgs[4], drawX, drawY, drawWidth, drawHeight);
 } 
 
@@ -126,7 +149,7 @@ function playPause() {
   if (song.isPlaying()) {
     song.stop();
   } else {
-    song.loop();   // 一直循环
+    song.loop();   
   }
 }
 
@@ -142,10 +165,10 @@ function windowResized() {
     }
   }
 
-  screamerBaseWidth = imgDrwPrps.width;
+  screamerBaseWidth  = imgDrwPrps.width;
   screamerBaseHeight = imgDrwPrps.height;
-  screamerCenterX = imgDrwPrps.xOffset + imgDrwPrps.width / 2;
-  screamerCenterY = imgDrwPrps.yOffset + imgDrwPrps.height / 2;
+  screamerBaseX = imgDrwPrps.xOffset;
+  screamerBaseY = imgDrwPrps.yOffset;
 }
 
 // Split an image into many segments
@@ -256,63 +279,74 @@ class ImageSegment {
   animate() {
 
   // We noticed that different computers draw frames at different speeds, so we use real time (millis) to keep the animation moving at a consistent speed on all devices
-  let t = millis() / 1000.0;
+    let t = millis() / 1000.0;
 
-  // Start each frame from the original position
+  // 每一帧从原始位置开始
   this.currentX = this.drawXPos;
   this.currentY = this.drawYPos;
 
-  // Layer 0 moves up and down like a smooth wave so the sunset sky looks alive instead of flat
-    if (this.layerIndex === 0) {
-  
-      // Controls how wide each wave is
-      let wavelength = 24.0;
-      let k = TWO_PI / wavelength;    
 
-      // How fast it is moving
-      let speed = 0.8;   
+  let maxShake = 40;                 
+  let shake = audioLevel * maxShake; 
 
-      // How high the wave moves up/down
-      let amplitude = this.drawHeight * 0.7;  
-      let phase = k * this.rowPosition - speed * t;
-      let waveOffsetY = sin(phase) * amplitude;
+  // ------ layer 0：红色 firesky ------
+  if (this.layerIndex === 0) {
 
-      // X stays still, Y moves up and down
-      this.currentX = this.drawXPos;
-      this.currentY = this.drawYPos + waveOffsetY;
-      return; 
-    }
+    let wavelength = 24.0;
+    let k = TWO_PI / wavelength;    
+    let speed = 1;   
+    let amplitude = this.drawHeight * 0.7;  
 
-  // Layer 2 move up and down using vertical lines
+    let phase = k * this.rowPosition - speed * t;
+    let waveOffsetY = sin(phase) * amplitude;
+
+    this.currentX = this.drawXPos;
+    this.currentY = this.drawYPos + waveOffsetY;
+
+    this.currentX += random(-shake, shake);
+    this.currentY += random(-shake, shake);
+
+    return; 
+  }
+
+
   if (this.layerIndex === 2) {
-    // how fast the segments move
-    let speed = 2.5;   
-    // how far the vertical line moves       
+    let speed = 2.5;              
     let amplitude = this.drawHeight;
 
-    // Makes the whole layer move continuously over time
     let waveOffset = sin(
       t * speed + this.rowPosition * 0.3 + this.phase
     ) * amplitude;
 
-    // Only the Y moves，X stays fixed
     this.currentY = this.drawYPos + waveOffset;
+
+
+    let greenShake = shake * 0.3;
+    this.currentX += random(-greenShake, greenShake);
+    this.currentY += random(-greenShake, greenShake);
+    return;
   }
 
-  // Layer 1 moves left and right like flowing water
+
   if (this.layerIndex === 1) {
-    // how fast the segments move
     let speed = 3.0;
-    // how far the horizontal line moves 
     let amplitude = this.drawWidth;
 
     let waveOffset = sin(
       t * speed + this.columnPosition * 0.3 + this.phase
     ) * amplitude;
 
-    // Only X moves, Y stays fixed
     this.currentX = this.drawXPos + waveOffset;
     this.currentY = this.drawYPos;
+
+
+    let blueShake = shake * 0.5;
+    this.currentX += random(-blueShake, blueShake);
+    this.currentY += random(-blueShake, blueShake);
+
+
+    return;
+  
   }
 }
 
