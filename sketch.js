@@ -6,15 +6,17 @@ let baseImg;
 let layerImgs = []; 
 let layerSegments = [];
 
-let song, analyser;
-let screamerBaseWidth, screamerBaseHeight;
-let screamerCenterX, screamerCenterY;
 
+//Audio
+let song, analyser;
 let audioLevel = 0;
 
-
-const screamerPivotX = 0.5;        // 横向 0~1，0.5 = 正中间
-const screamerPivotY = 0.7; 
+//Screamer image size
+let screamerBaseWidth, screamerBaseHeight;
+let screamerBaseX, screamerBaseY;
+// Point for scaling
+const screamerPointX = 0.5;       
+const screamerPointY = 0.7; 
 
 // Angles for each layer's line
 let layerAngles = [-10, 0, 90, 0, 90,90];
@@ -22,7 +24,8 @@ let numSegments = 90;
 
 // Store the scaled size and position of the image so it always fits the canvas properly
 let imgDrwPrps = {aspect: 0, width: 0, height: 0, xOffset: 0, yOffset: 0};
-let canvasAspectRatio = 0;
+
+
 
 // Preload all the assets
 function preload() {
@@ -39,8 +42,9 @@ function preload() {
   song = loadSound('assets/186093__yoh__screams-male-high-pitched.wav');
 }
 
-function setup() {
 
+
+function setup() {
   // Make canvas the size of the browser window
   createCanvas(windowWidth, windowHeight);
   imgDrwPrps.aspect = baseImg.width / baseImg.height; 
@@ -60,10 +64,9 @@ function setup() {
       segment.calculateSegDrawProps();
     }
   }
-
+  //Screamer size fit
   screamerBaseWidth = imgDrwPrps.width;
   screamerBaseHeight = imgDrwPrps.height;
-
   screamerBaseX = imgDrwPrps.xOffset;
   screamerBaseY = imgDrwPrps.yOffset;
 
@@ -72,10 +75,16 @@ function setup() {
 
   let button = createButton('Play/Pause');
   button.position(20, 20);
-  
+  button.style('background', 'rgba(231, 111, 12, 0.94)');
+  button.style('color', 'white');
+  button.style('border', 'none');
+  button.style('padding', '10px 20px');
+  button.style('border-radius', '10px');
+  button.style('font-size', '12px');
   button.mousePressed(playPause);
-  
 }
+
+
 
 function draw() {
    background(0);
@@ -96,44 +105,39 @@ function draw() {
       segment.draw();
     }
   }
-
+  // Get the current loudness of the audio
   let rms = analyser ? analyser.getLevel() : 0;
-
-  // 可选：去掉一点底噪，不然会一直抖
+  // Skip super tiny volume so it doesn’t shake all the time
   let noiseFloor = 0.02;
   let level = max(0, rms - noiseFloor);
-  level = constrain(level, 0, 0.3);
+  // Easier to use for animation
   let t = level / 0.3;
   audioLevel = t;
-
-  
-
-  // scaleFactor：最小 = 1（正常大小），最大 = 1.5（放大）
+  // Calculate how much to scale the screamer layer
   let scaleFactor = lerp(1.0, 2.8, t);
-
-  // 用“基准大小 * 缩放”
+  // Base size * scale factor = new width/height
   let drawWidth = screamerBaseWidth * scaleFactor;
   let drawHeight = screamerBaseHeight * scaleFactor;
 
   let drawX =
     screamerBaseX +
-    screamerBaseWidth * screamerPivotX -
-    drawWidth * screamerPivotX;
+    screamerBaseWidth * screamerPointX -
+    drawWidth * screamerPointX;
 
   let drawY =
     screamerBaseY +
-    screamerBaseHeight * screamerPivotY -
-    drawHeight * screamerPivotY;
+    screamerBaseHeight * screamerPointY -
+    drawHeight * screamerPointY;
 
+  // Maximum shake
   let maxScreamerShake = 50;               
   let shakeStrength = audioLevel;
-  let shakeX = random(-maxScreamerShake * shakeStrength,
-                     maxScreamerShake * shakeStrength);
 
-
+  // Random left right offset based on volume
+  let shakeX = random(-maxScreamerShake * shakeStrength, maxScreamerShake * shakeStrength);
   let shakeY = random(-10 * shakeStrength, 10 * shakeStrength);
 
-
+  // Apply the shake to the position
   drawX += shakeX;
   drawY += shakeY;
 
@@ -207,25 +211,22 @@ function createSegmentsFromImage(srcImg, targetArray, layerIndex) {
 
 // calculates how image should be scaled and positioned on the canvas
 function calculateImageDrawProps() {
-  
-  canvasAspectRatio = width / height;
+  let canvasAspectRatio = width / height;
   
   if (imgDrwPrps.aspect > canvasAspectRatio) {
-    
     imgDrwPrps.width = width;
-   
     imgDrwPrps.height = width / imgDrwPrps.aspect;
     imgDrwPrps.yOffset = (height - imgDrwPrps.height) / 2;
     imgDrwPrps.xOffset = 0;
+
   } else if (imgDrwPrps.aspect < canvasAspectRatio) {
    
     imgDrwPrps.height = height;
-  
     imgDrwPrps.width = height * imgDrwPrps.aspect;
     imgDrwPrps.xOffset = (width - imgDrwPrps.width) / 2;
     imgDrwPrps.yOffset = 0;
   }
-  else if (imgDrwPrps.aspect == canvasAspectRatio) {
+  else {
   
     imgDrwPrps.width = width;
     imgDrwPrps.height = height;
@@ -263,12 +264,9 @@ class ImageSegment {
     this.drawWidth = imgDrwPrps.width / numSegments;
     this.drawHeight = imgDrwPrps.height / numSegments;
     
-    
     this.drawXPos = this.rowPosition * this.drawWidth + imgDrwPrps.xOffset;
     this.drawYPos = this.columnPosition * this.drawHeight + imgDrwPrps.yOffset;
 
-    // Called once during setup or when the window is resized
-    this.currentY = this.drawYPos;
   }
 
   animate() {
@@ -276,35 +274,32 @@ class ImageSegment {
   // We noticed that different computers draw frames at different speeds, so we use real time (millis) to keep the animation moving at a consistent speed on all devices
     let t = millis() / 1000.0;
 
-  // 每一帧从原始位置开始
+  // Start each frame from the original position
   this.currentX = this.drawXPos;
   this.currentY = this.drawYPos;
-
 
   let maxShake = 40;                 
   let shake = audioLevel * maxShake; 
 
-  // ------ layer 0：红色 firesky ------
+  // Layer 0 shake strongly with the audio
   if (this.layerIndex === 0) {
 
     let wavelength = 24.0;
     let k = TWO_PI / wavelength;    
     let speed = 1;   
     let amplitude = this.drawHeight * 0.7;  
-
     let phase = k * this.rowPosition - speed * t;
     let waveOffsetY = sin(phase) * amplitude;
 
     this.currentX = this.drawXPos;
     this.currentY = this.drawYPos + waveOffsetY;
-
     this.currentX += random(-shake, shake);
     this.currentY += random(-shake, shake);
 
     return; 
   }
 
-
+  // Layer 2 shake a bit
   if (this.layerIndex === 2) {
     let speed = 2.5;              
     let amplitude = this.drawHeight;
@@ -314,15 +309,13 @@ class ImageSegment {
     ) * amplitude;
 
     this.currentY = this.drawYPos + waveOffset;
-
-
     let greenShake = shake * 0.3;
     this.currentX += random(-greenShake, greenShake);
     this.currentY += random(-greenShake, greenShake);
     return;
   }
 
-
+  // Layer 1 shake a medium amount
   if (this.layerIndex === 1) {
     let speed = 3.0;
     let amplitude = this.drawWidth;
@@ -334,14 +327,10 @@ class ImageSegment {
     this.currentX = this.drawXPos + waveOffset;
     this.currentY = this.drawYPos;
 
-
     let blueShake = shake * 0.5;
     this.currentX += random(-blueShake, blueShake);
     this.currentY += random(-blueShake, blueShake);
-
-
     return;
-  
   }
 }
 
