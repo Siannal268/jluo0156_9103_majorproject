@@ -72,12 +72,7 @@ function setup() {
 
   let button = createButton('Play/Pause');
   button.position(20, 20);
-  button.style('background', 'rgba(231, 111, 12, 0.94)');
-  button.style('color', 'white');
-  button.style('border', 'none');
-  button.style('padding', '10px 20px');
-  button.style('border-radius', '10px');
-  button.style('font-size', '12px');
+  
   button.mousePressed(playPause);
   
 }
