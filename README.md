@@ -1,3 +1,1 @@
 # jluo0156_9103_majorproject
-
-hi 
