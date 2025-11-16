@@ -50,8 +50,9 @@ The exaggerated shaking motion in the head suggested a way to make the screamer 
 
 
 
-![An image of words shaking](assets/shanshuo.gif)
+![An image of words shaking](assets/shan.gif)
 ![Image 3](assets/shaking.gif)
+
 These shaking text animations inspired the motion of the background lines in my work.
 When combined with the audio-reactive system, the trembling effect helped express the idea that the screamer’s voice is so powerful that it “shakes” and distorts the entire world around them, almost like the painting is breaking apart from the sound.
 
