@@ -13,7 +13,7 @@ The main figure in the image scales up and down according to the loudness of the
 The background layers are reconstructed using line segments. These segments shift slightly each frame, and the amount of movement increases as the audio becomes louder.
 
 ### Summary
-The sketch reacts directly to the audio level. The viewer interacts by pressing Play/Pause, and all visual changes—scaling, shaking, and line movement—are controlled by the real-time amplitude of the sound.
+The sketch reacts directly to the audio level. The viewer interacts by pressing Play/Pause, and all visual changes scaling, shaking, and line movement are controlled by the real-time amplitude of the sound.
 
 
 
